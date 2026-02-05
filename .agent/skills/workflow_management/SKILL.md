@@ -8,22 +8,40 @@ description: Manage LangGraph workflows, debug state transitions, and handle che
 ## Purpose
 Master the AARLP recruitment workflow powered by LangGraph. This skill covers workflow debugging, state management, checkpoint handling, and adding new nodes/edges to the graph.
 
+## AI Provider Selection (Amazon Nova AI Hackathon)
+
+**AARLP supports two AI providers:**
+- `bedrock` (default for hackathon) - AWS Nova models
+- `openai` (fallback) - OpenAI GPT-4
+
+Set via `AI_PROVIDER` environment variable.
+
 ## Secrets Management
 
 **Required for External API Calls:**
-- `OPENAI_API_KEY` - For JD generation nodes
-- `PINECONE_API_KEY` - For shortlisting nodes
-- `TWILIO_*` - For voice prescreening nodes (future)
+
+| Secret | Provider | Purpose |
+|--------|----------|---------|
+| `AWS_ACCESS_KEY_ID` | bedrock | Nova model access |
+| `AWS_SECRET_ACCESS_KEY` | bedrock | Nova model access |
+| `OPENAI_API_KEY` | openai | JD generation fallback |
+| `PINECONE_API_KEY` | both | Shortlisting nodes |
 
 **Configuration (app/core/config.py):**
 ```python
 class Settings(BaseSettings):
-    openai_api_key: str
-    openai_model: str = "gpt-4-turbo-preview"  # Version-pinned
-    openai_model_version: str = "2024-02"  # Track for deprecations
-    llm_temperature: float = 0.7
+    # AI Provider Selection
+    ai_provider: Literal["openai", "bedrock"] = "bedrock"
     
-    pinecone_api_key: str
+    # AWS Bedrock (Primary for hackathon)
+    aws_access_key_id: str
+    aws_secret_access_key: str
+    aws_region: str = "us-east-1"
+    bedrock_model_id: str = "amazon.nova-lite-v1:0"
+    
+    # OpenAI (Fallback)
+    openai_api_key: str
+    openai_model: str = "gpt-4o"
     
     class Config:
         env_file = ".env"
@@ -32,29 +50,23 @@ class Settings(BaseSettings):
 **Security in Workflow Nodes:**
 ```python
 async def api_integration_node(state: GraphState) -> GraphState:
-    """Never log secrets or include in state."""
-    from app.ai.client import get_openai_client
+    """Use provider-agnostic client for AI calls."""
+    from app.ai.client import is_bedrock_provider
     from app.core.config import get_settings
     
-    settings = get_settings()
-    client = get_openai_client()  # Uses env var internally
+    if is_bedrock_provider():
+        from app.ai.bedrock_client import invoke_nova_model
+        result = await invoke_nova_model(messages=[...])
+    else:
+        from app.ai.client import get_openai_client
+        client = get_openai_client()
+        response = await client.chat.completions.create(...)
     
     # NEVER log API keys
-    logger.info(f"Calling OpenAI API for job {state.job_id}")
-    # ❌ DON'T: logger.info(f"API Key: {settings.openai_api_key}")
-    
-    response = await client.chat.completions.create(
-        model=settings.openai_model,
-        messages=[...]
-    )
+    logger.info(f"AI call completed for job {state.job_id}")
     
     return state.model_copy(...)
 ```
-
-**Model Versions:**
-- `gpt-4-turbo-preview` (Current for JD generation)
-- `gpt-4o` (Alternative for faster responses)
-- Monitor: [OpenAI Deprecations](https://platform.openai.com/docs/deprecations)
 
 ## Architecture Overview
 

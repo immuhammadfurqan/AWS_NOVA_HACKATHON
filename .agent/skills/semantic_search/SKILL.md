@@ -8,44 +8,56 @@ description: Manage Pinecone vector operations for semantic candidate matching a
 ## Purpose
 Manage Pinecone vector database operations for the AARLP platform. This skill covers embedding generation, vector upserts, semantic similarity search, and candidate ranking.
 
+## AI Provider Support (Amazon Nova Hackathon)
+
+AARLP supports multiple embedding providers:
+- **AWS Bedrock (default)**: `amazon.titan-embed-text-v2:0` - 1024 dimensions
+- **OpenAI (fallback)**: `text-embedding-3-small` - 1536 dimensions
+
+Set via `AI_PROVIDER` environment variable.
+
 ## Secrets Management
 
 **Required API Keys:**
-- `PINECONE_API_KEY` - Pinecone serverless API key
-- `OPENAI_API_KEY` - OpenAI API key for embeddings
+
+| Secret | Provider | Purpose |
+|--------|----------|---------|
+| `PINECONE_API_KEY` | both | Vector database |
+| `AWS_ACCESS_KEY_ID` | bedrock | Titan embeddings |
+| `AWS_SECRET_ACCESS_KEY` | bedrock | Titan embeddings |
+| `OPENAI_API_KEY` | openai | OpenAI embeddings |
 
 **Configuration (app/core/config.py):**
 ```python
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
+    # AI Provider
+    ai_provider: Literal["openai", "bedrock"] = "bedrock"
+    
+    # Pinecone
     pinecone_api_key: str
-    pinecone_index: str = "aarlp-embeddings"
-    pinecone_environment: str = "us-west-2"
+    pinecone_index: str = "aarlp-nova-candidates"
     
+    # AWS Bedrock Embeddings
+    aws_access_key_id: str
+    aws_secret_access_key: str
+    aws_region: str = "us-east-1"
+    bedrock_embedding_model_id: str = "amazon.titan-embed-text-v2:0"
+    bedrock_embedding_dimension: int = 1024
+    
+    # OpenAI Embeddings (Fallback)
     openai_api_key: str
-    embedding_model: str = "text-embedding-3-small"  # Version pinned
-    embedding_model_version: str = "2024-01"  # Track model version
-    
-    class Config:
-        env_file = ".env"
-        secrets_dir = "/run/secrets"  # For Docker secrets
-
-# Access secrets
-settings = get_settings()
+    openai_embedding_model: str = "text-embedding-3-small"
+    openai_embedding_dimension: int = 1536
 ```
 
-**Security Best Practices:**
-1. Never commit `.env` files to git
-2. Use environment variables in production
-3. Rotate API keys quarterly
-4. Use Docker secrets or cloud secret managers (AWS Secrets Manager, Azure Key Vault)
-5. Monitor API usage to detect key compromise
+**Dynamic Dimension Handling:**
+```python
+from app.ai.client import get_embedding_dimension
 
-**Model Versions:**
-- `text-embedding-3-small` (1536 dimensions) - Current production model
-- Released: January 2024
-- Deprecation: Monitor [OpenAI deprecation page](https://platform.openai.com/docs/deprecations)
+dimension = get_embedding_dimension()  # Returns 1024 or 1536 based on provider
+```
 
 
 

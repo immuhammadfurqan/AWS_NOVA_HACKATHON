@@ -49,13 +49,32 @@ class Settings(BaseSettings):
     # ----------------------------
     pinecone_api_key: str = ""
     pinecone_index: str = "aarlp-candidates"
+    pinecone_index_nova: str = "aarlp-nova-candidates"  # For Nova 1024-dim embeddings
 
     # ----------------------------
-    # OpenAI
+    # AI Provider Selection
+    # ----------------------------
+    ai_provider: Literal["openai", "bedrock"] = (
+        "bedrock"  # Default to AWS for hackathon
+    )
+
+    # ----------------------------
+    # OpenAI (Fallback)
     # ----------------------------
     openai_api_key: str = ""
     openai_model: str = "gpt-4o"
     openai_embedding_model: str = "text-embedding-3-small"
+    openai_embedding_dimension: int = 1536
+
+    # ----------------------------
+    # AWS Bedrock (Nova Models)
+    # ----------------------------
+    aws_access_key_id: str = ""
+    aws_secret_access_key: str = ""
+    aws_region: str = "us-east-1"
+    bedrock_model_id: str = "amazon.nova-lite-v1:0"
+    bedrock_embedding_model_id: str = "amazon.titan-embed-text-v2:0"
+    bedrock_embedding_dimension: int = 1024
 
     # ----------------------------
     # Voice AI

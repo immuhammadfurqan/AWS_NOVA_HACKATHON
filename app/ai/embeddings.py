@@ -2,8 +2,11 @@
 AARLP Pinecone Utility
 
 Vector embedding storage and semantic similarity matching using:
-- OpenAI text-embedding-3-small for generation
+- OpenAI text-embedding-3-small (fallback)
+- AWS Bedrock Nova/Titan embeddings (primary for hackathon)
 - Pinecone for vector database storage and search
+
+Provider selection is controlled by AI_PROVIDER env var.
 """
 
 import asyncio
@@ -15,7 +18,11 @@ import numpy as np
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
-from app.ai.client import get_openai_client
+from app.ai.client import (
+    get_openai_client,
+    is_bedrock_provider,
+    get_embedding_dimension,
+)
 from app.ai.constants import EmbeddingLimits
 from app.candidates.schemas import Applicant
 from app.jobs.schemas import GeneratedJD
@@ -46,11 +53,16 @@ class PineconeService:
         self.index = self.pc.Index(self.index_name)
 
     def _ensure_index_exists(self):
-        """Check if index exists, if not create it."""
+        """Check if index exists, if not create it with correct dimension for provider."""
+        dimension = get_embedding_dimension()
+
         if self.index_name not in self.pc.list_indexes().names():
+            logger.info(
+                f"Creating Pinecone index '{self.index_name}' with dimension {dimension}"
+            )
             self.pc.create_index(
                 name=self.index_name,
-                dimension=1536,  # text-embedding-3-small
+                dimension=dimension,  # 1024 for Nova/Titan, 1536 for OpenAI
                 metric="cosine",
                 spec=ServerlessSpec(cloud="aws", region="us-east-1"),
             )
@@ -121,7 +133,9 @@ class PineconeService:
 
 async def generate_embedding(text: str) -> List[float]:
     """
-    Generate embedding for text using OpenAI.
+    Generate embedding for text using configured AI provider.
+
+    Uses OpenAI or AWS Bedrock based on AI_PROVIDER setting.
 
     Args:
         text: Text to embed
@@ -141,6 +155,14 @@ async def generate_embedding(text: str) -> List[float]:
         )
         text = text[: EmbeddingLimits.MAX_TEXT_LENGTH]
 
+    if is_bedrock_provider():
+        return await _generate_embedding_bedrock(text)
+    else:
+        return await _generate_embedding_openai(text)
+
+
+async def _generate_embedding_openai(text: str) -> List[float]:
+    """Generate embedding using OpenAI."""
     settings = get_settings()
     client = get_openai_client()
 
@@ -150,6 +172,13 @@ async def generate_embedding(text: str) -> List[float]:
     )
 
     return response.data[0].embedding
+
+
+async def _generate_embedding_bedrock(text: str) -> List[float]:
+    """Generate embedding using AWS Bedrock Nova/Titan model."""
+    from app.ai.bedrock_client import generate_embedding as bedrock_generate_embedding
+
+    return await bedrock_generate_embedding(text)
 
 
 async def generate_jd_embedding(jd: GeneratedJD) -> List[float]:
