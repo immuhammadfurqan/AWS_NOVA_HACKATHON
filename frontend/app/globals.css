@@ -1,0 +1,295 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --radius-radius: var(--radius);
+
+  /* Semantic Landing Page Colors (Mapped to CSS Variables) */
+  --color-landing-bg: var(--landing-bg);
+  --color-landing-text: var(--landing-text);
+  --color-landing-text-muted: var(--landing-text-muted);
+  --color-landing-primary: var(--landing-primary);
+  --color-landing-primary-glow: var(--landing-primary-glow);
+
+  /* Animations */
+  --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-float: float 6s ease-in-out infinite;
+
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+}
+
+/* Light Mode (Default in :root) */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221.2 83.2% 53.3%;
+  --radius: 0.5rem;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+
+  /* Landing Page - Light Mode Tokens */
+  --landing-bg: #ffffff;
+  --landing-text: #1e293b;
+  --landing-text-muted: #64748b;
+  --landing-primary: #3b82f6;
+  /* Cobalt Blue */
+  --landing-primary-glow: #2563eb;
+
+  --landing-btn-bg: #1e293b;
+  --landing-btn-text: #ffffff;
+  --landing-footer-bg: rgba(255, 255, 255, 0.5);
+
+  --landing-glass-bg: rgba(255, 255, 255, 0.7);
+  --landing-glass-border: rgba(255, 255, 255, 0.5);
+  --landing-glass-card-bg: rgba(255, 255, 255, 0.65);
+  --landing-glass-card-border: rgba(0, 0, 0, 0.06);
+  --landing-glass-card-hover-bg: rgba(255, 255, 255, 0.85);
+
+  --landing-hero-gradient: radial-gradient(ellipse at 50% -20%, rgba(59, 130, 246, 0.15), rgba(255, 255, 255, 0));
+  --landing-card-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 100%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+  }
+}
+
+/* Dark Mode Overrides */
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 224.3 76.3% 48%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+
+  /* Landing Page - Dark Mode Tokens */
+  --landing-bg: #0f1115;
+  --landing-text: #ffffff;
+  --landing-text-muted: #94a3b8;
+  --landing-primary: #2559f4;
+  /* Electric Blue */
+  --landing-primary-glow: #4d7cff;
+
+  --landing-btn-bg: #ffffff;
+  --landing-btn-text: #0f1115;
+  --landing-footer-bg: transparent;
+
+  --landing-glass-bg: rgba(15, 17, 21, 0.6);
+  --landing-glass-border: rgba(255, 255, 255, 0.08);
+  --landing-glass-card-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+  --landing-glass-card-border: rgba(255, 255, 255, 0.05);
+  --landing-glass-card-hover-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+
+  --landing-hero-gradient: radial-gradient(ellipse at 50% -20%, rgba(37, 89, 244, 0.25), rgba(0, 0, 0, 0));
+  --landing-card-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+/* Glassmorphism Utilities */
+@utility glass {
+  background: var(--landing-glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--landing-glass-border);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+@utility glass-card {
+  background: var(--landing-glass-card-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--landing-glass-card-border);
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: rgba(37, 89, 244, 0.3);
+    background: var(--landing-glass-card-hover-bg);
+    transform: translateY(-2px);
+  }
+}
+
+@utility text-gradient {
+  background: linear-gradient(to right, var(--landing-text), #a5b4fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@utility glass-input {
+  background-color: hsl(var(--secondary) / 0.5);
+  border-color: hsl(var(--input));
+  color: hsl(var(--foreground));
+}
+
+/* Auth Pages - Dark Theme with Cyan Accent */
+:root {
+  --auth-bg: #101c22;
+  --auth-bg-left: #0a1418;
+  --auth-primary: #25aff4;
+  --auth-primary-glow: rgba(37, 175, 244, 0.4);
+  --auth-card-bg: rgba(16, 29, 34, 0.65);
+  --auth-card-border: rgba(49, 86, 104, 0.4);
+  --auth-input-bg: #182b34;
+  --auth-input-border: rgba(49, 86, 104, 0.5);
+  --auth-text-muted: #94a3b8;
+}
+
+@utility auth-bg {
+  background-color: var(--auth-bg);
+  min-height: 100vh;
+}
+
+@utility auth-bg-left {
+  background: radial-gradient(circle at top left, #1e3a4a, #101c22);
+}
+
+@utility auth-bg-grid {
+  background-image: 
+    linear-gradient(rgba(37, 175, 244, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 175, 244, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+@utility auth-glass-card {
+  background: var(--auth-card-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--auth-card-border);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+}
+
+@utility auth-glow-button {
+  box-shadow: 0 0 15px var(--auth-primary-glow);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    box-shadow: 0 0 25px rgba(37, 175, 244, 0.6);
+    transform: translateY(-1px);
+  }
+}
+
+@utility auth-input {
+  background-color: var(--auth-input-bg);
+  border: 1px solid var(--auth-input-border);
+  color: white;
+  
+  &::placeholder {
+    color: #64748b;
+  }
+  
+  &:focus {
+    border-color: var(--auth-primary);
+    box-shadow: 0 0 0 1px rgba(37, 175, 244, 0.3);
+    outline: none;
+  }
+}
+
+/* Auth gradient overlays */
+.auth-gradient-overlay {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at top left, rgba(37, 175, 244, 0.1), transparent 50%),
+    radial-gradient(circle at bottom right, rgba(37, 175, 244, 0.05), transparent 50%);
+  pointer-events: none;
+}
+
+/* Spiral/circular background pattern for register page */
+.auth-spiral-bg {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.15;
+  background: 
+    repeating-radial-gradient(
+      circle at center,
+      transparent 0px,
+      transparent 20px,
+      rgba(37, 175, 244, 0.1) 20px,
+      rgba(37, 175, 244, 0.1) 21px
+    );
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Agent active pulse animation */
+@keyframes auth-pulse {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1); 
+  }
+  50% { 
+    opacity: 0.7; 
+    transform: scale(1.05); 
+  }
+}
+
+.auth-agent-pulse {
+  animation: auth-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
