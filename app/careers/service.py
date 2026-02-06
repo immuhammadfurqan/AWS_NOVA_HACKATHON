@@ -6,7 +6,6 @@ Business logic for public career pages.
 
 import os
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
@@ -14,6 +13,7 @@ import numpy as np
 
 from app.careers.repository import CareersRepository
 from app.careers.jsonld_generator import generate_job_posting_jsonld
+from app.careers.constants import UPLOADS_DIR, MAX_RESUME_SIZE_MB
 from app.jobs.schemas import GeneratedJD
 from app.jobs.models import JobRecord
 from app.core.logging import get_logger
@@ -23,10 +23,6 @@ from app.candidates.models import ApplicantRecord
 from app.candidates.schemas import Applicant as ApplicantSchema
 
 logger = get_logger(__name__)
-
-# Constants
-UPLOADS_DIR = Path("uploads/resumes")
-MAX_RESUME_SIZE_MB = 10
 
 
 class CareersService:

@@ -1,0 +1,1 @@
+"""Candidates module tests."""
