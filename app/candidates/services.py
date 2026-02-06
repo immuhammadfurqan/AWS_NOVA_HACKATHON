@@ -8,12 +8,15 @@ Uses CandidateRepository for database access.
 from typing import Optional
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app.core.config import Settings
 from app.core.exceptions import RecordNotFoundError, ValidationError
 from app.core.logging import get_logger
 
+from app.candidates.models import ApplicantRecord
 from app.candidates.repository import CandidateRepository
 from app.candidates.schemas import (
     Applicant,
@@ -21,6 +24,7 @@ from app.candidates.schemas import (
     CandidateResponse,
     ScheduleInterviewRequest,
 )
+from app.jobs.schemas import GeneratedJD
 
 
 class CandidateService:
@@ -85,6 +89,56 @@ class CandidateService:
             "total": len(applicants),
             "applicants": applicants,
             "shortlisted": shortlisted,
+        }
+
+    async def get_all_candidates(self) -> dict:
+        """
+        Get all candidates across all jobs.
+
+        Returns candidates with their associated job title for the global view.
+        """
+
+        # Query all applicants with their job relationship
+        result = await self.session.execute(
+            select(ApplicantRecord)
+            .options(joinedload(ApplicantRecord.job))
+            .order_by(ApplicantRecord.applied_at.desc())
+        )
+        applicants_db = result.scalars().unique().all()
+
+        candidates = []
+        for rec in applicants_db:
+            # Get job title from generated_jd
+            job_title = "Unknown Position"
+            if rec.job and rec.job.generated_jd:
+                try:
+                    jd = GeneratedJD.model_validate(rec.job.generated_jd)
+                    job_title = jd.job_title
+                except Exception:
+                    pass
+
+            candidates.append(
+                {
+                    "id": str(rec.id),
+                    "name": rec.name,
+                    "email": rec.email,
+                    "phone": rec.phone,
+                    "resume_path": rec.resume_path,
+                    "similarity_score": (
+                        rec.similarity_score * 100 if rec.similarity_score else 0
+                    ),
+                    "shortlisted": rec.shortlisted,
+                    "applied_at": (
+                        rec.applied_at.isoformat() if rec.applied_at else None
+                    ),
+                    "job_id": str(rec.job_id),
+                    "job_title": job_title,
+                }
+            )
+
+        return {
+            "total": len(candidates),
+            "candidates": candidates,
         }
 
     async def get_candidate_responses(

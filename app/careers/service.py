@@ -4,15 +4,29 @@ Careers Service
 Business logic for public career pages.
 """
 
-from uuid import UUID
+import os
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import TYPE_CHECKING
+from uuid import UUID, uuid4
+
+import numpy as np
 
 from app.careers.repository import CareersRepository
 from app.careers.jsonld_generator import generate_job_posting_jsonld
 from app.jobs.schemas import GeneratedJD
 from app.jobs.models import JobRecord
 from app.core.logging import get_logger
+from app.ai.pdf_parser import extract_text_from_pdf, clean_resume_text
+from app.ai.embeddings import generate_embedding, generate_jd_embedding, PineconeService
+from app.candidates.models import ApplicantRecord
+from app.candidates.schemas import Applicant as ApplicantSchema
 
 logger = get_logger(__name__)
+
+# Constants
+UPLOADS_DIR = Path("uploads/resumes")
+MAX_RESUME_SIZE_MB = 10
 
 
 class CareersService:
@@ -103,6 +117,39 @@ class CareersService:
             "jsonld": jsonld_data.jsonld,
         }
 
+    async def _calculate_similarity(
+        self,
+        resume_embedding: list[float],
+        generated_jd: dict,
+    ) -> float | None:
+        """
+        Calculate cosine similarity between resume and job description embeddings.
+
+        Args:
+            resume_embedding: Resume text embedding vector
+            generated_jd: Generated JD data dict
+
+        Returns:
+            Similarity score (0.0-1.0) or None if calculation fails
+        """
+        try:
+            jd_obj = GeneratedJD.model_validate(generated_jd)
+            jd_embedding = await generate_jd_embedding(jd_obj)
+
+            vec1 = np.array(jd_embedding)
+            vec2 = np.array(resume_embedding)
+
+            dot_product = np.dot(vec1, vec2)
+            norm1 = np.linalg.norm(vec1)
+            norm2 = np.linalg.norm(vec2)
+
+            if norm1 > 0 and norm2 > 0:
+                return float(dot_product / (norm1 * norm2))
+            return None
+        except Exception as e:
+            logger.error(f"Failed to calculate similarity: {e}")
+            return None
+
     async def create_application(
         self,
         job_id: UUID,
@@ -126,16 +173,6 @@ class CareersService:
         Returns:
             Dict with applicant_id and job_id
         """
-        import os
-        import tempfile
-        from datetime import datetime, timezone
-        from uuid import uuid4
-        from pathlib import Path
-
-        from app.ai.pdf_parser import extract_text_from_pdf, clean_resume_text
-        from app.ai.embeddings import generate_embedding, PineconeService
-        from app.candidates.models import ApplicantRecord
-
         # 1. Verify job exists and is approved
         job = await self.repository.get_public_job(job_id)
         if not job:
@@ -148,13 +185,12 @@ class CareersService:
                 f"An application with email {email} already exists for this job"
             )
 
-        # 3. Save resume file to temp location
-        uploads_dir = Path("uploads/resumes")
-        uploads_dir.mkdir(parents=True, exist_ok=True)
+        # 3. Save resume file
+        UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
         applicant_id = uuid4()
         safe_filename = f"{applicant_id}_{resume_filename}"
-        resume_path = uploads_dir / safe_filename
+        resume_path = UPLOADS_DIR / safe_filename
 
         with open(resume_path, "wb") as f:
             f.write(resume_content)
@@ -179,20 +215,10 @@ class CareersService:
 
                 # Calculate similarity with JD if available
                 if job.generated_jd:
-                    from app.ai.embeddings import generate_jd_embedding
-                    import numpy as np
-
-                    jd_obj = GeneratedJD.model_validate(job.generated_jd)
-                    jd_embedding = await generate_jd_embedding(jd_obj)
-
-                    # Cosine similarity
-                    vec1 = np.array(jd_embedding)
-                    vec2 = np.array(embedding)
-                    dot_product = np.dot(vec1, vec2)
-                    norm1 = np.linalg.norm(vec1)
-                    norm2 = np.linalg.norm(vec2)
-                    if norm1 > 0 and norm2 > 0:
-                        similarity_score = float(dot_product / (norm1 * norm2))
+                    similarity_score = await self._calculate_similarity(
+                        embedding, job.generated_jd
+                    )
+                    if similarity_score:
                         logger.info(f"Similarity score: {similarity_score:.4f}")
 
             except Exception as e:
@@ -218,8 +244,6 @@ class CareersService:
         # 7. Store in Pinecone (optional, depends on config)
         if embedding:
             try:
-                from app.candidates.schemas import Applicant as ApplicantSchema
-
                 applicant_schema = ApplicantSchema(
                     id=applicant_id,
                     name=name,
@@ -232,8 +256,8 @@ class CareersService:
                     shortlisted=False,
                     applied_at=applicant.applied_at,
                 )
-                ps = PineconeService()
-                await ps.upsert_applicant(applicant_schema, str(job_id))
+                pinecone_service = PineconeService()
+                await pinecone_service.upsert_applicant(applicant_schema, str(job_id))
                 logger.info(
                     f"Stored embedding in Pinecone for applicant {applicant_id}"
                 )

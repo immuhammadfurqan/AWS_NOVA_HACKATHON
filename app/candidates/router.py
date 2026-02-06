@@ -37,8 +37,25 @@ async def get_candidate_service(
 
 
 @router.get(
+    "/candidates",
+    summary="List all candidates across all jobs",
+    tags=["Candidates"],
+)
+async def get_all_candidates(
+    service: CandidateService = Depends(get_candidate_service),
+):
+    """
+    Get all candidates across all jobs for the recruiter.
+
+    Returns candidates with their associated job title for easy identification.
+    Sorted by application date (newest first) by default.
+    """
+    return await service.get_all_candidates()
+
+
+@router.get(
     "/jobs/{job_id}/applicants",
-    summary="List all applicants",
+    summary="List all applicants for a specific job",
     tags=["Candidates"],
 )
 async def get_applicants(
