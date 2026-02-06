@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, DollarSign, Clock, Building2, CheckCircle } from 'lucide-react';
 import Script from 'next/script';
+import ApplyButton from './ApplyButton';
 
 interface PublicJobResponse {
     job_id: string;
@@ -137,9 +138,7 @@ export default async function JobDetailPage({ params }: PageProps) {
 
                     {/* Apply Button */}
                     <div className="mt-8">
-                        <button className="px-8 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors">
-                            Apply Now
-                        </button>
+                        <ApplyButton jobId={job.job_id} jobTitle={job.job_title} />
                     </div>
                 </div>
 
@@ -225,9 +224,7 @@ export default async function JobDetailPage({ params }: PageProps) {
                 <div className="glass-card p-8 text-center">
                     <h3 className="text-xl font-semibold text-foreground mb-2">Interested in this role?</h3>
                     <p className="text-muted-foreground mb-6">We&apos;d love to hear from you!</p>
-                    <button className="px-8 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors">
-                        Apply Now
-                    </button>
+                    <ApplyButton jobId={job.job_id} jobTitle={job.job_title} />
                 </div>
             </div>
         </>

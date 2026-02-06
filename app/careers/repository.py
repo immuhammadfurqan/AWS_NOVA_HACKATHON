@@ -36,3 +36,20 @@ class CareersRepository:
             .where(JobRecord.jd_approval_status == ApprovalStatus.APPROVED.value)
         )
         return result.scalar_one_or_none()
+
+    async def get_applicant_by_email(self, job_id: UUID, email: str):
+        """Check if an applicant with this email already applied for this job."""
+        from app.candidates.models import ApplicantRecord
+
+        result = await self.session.execute(
+            select(ApplicantRecord)
+            .where(ApplicantRecord.job_id == job_id)
+            .where(ApplicantRecord.email == email)
+        )
+        return result.scalar_one_or_none()
+
+    async def create_applicant(self, applicant) -> None:
+        """Create a new applicant record."""
+        self.session.add(applicant)
+        await self.session.commit()
+        await self.session.refresh(applicant)
