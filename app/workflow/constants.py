@@ -11,12 +11,13 @@ from enum import Enum
 class NodeName(str, Enum):
     """
     Node identifiers for graph routing.
-    
+
     Using an enum eliminates magic strings and provides:
     - IDE autocomplete
     - Compile-time typo detection
     - Single source of truth for node names
     """
+
     GENERATE_JD = "generate_jd"
     POST_JOB = "post_job"
     MONITOR_APPLICATIONS = "monitor_applications"
@@ -25,6 +26,7 @@ class NodeName(str, Enum):
     REVIEW_RESPONSES = "review_responses"
     SCHEDULE_INTERVIEW = "schedule_interview"
     REJECT_CANDIDATE = "reject_candidate"
+    OPTIMIZE_JD = "optimize_jd"
 
 
 # =============================================================================

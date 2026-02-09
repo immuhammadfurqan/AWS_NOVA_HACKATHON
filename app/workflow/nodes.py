@@ -11,7 +11,7 @@ from pydantic import ValidationError
 
 from app.core.config import get_settings
 from app.jobs.schemas import RecruitmentNodeStatus, ApprovalStatus
-from app.ai.jd_generator import generate_job_description
+from app.ai.jd_generator import generate_job_description, optimize_job_description
 from app.workflow.state import GraphState
 from app.workflow.constants import NodeName
 from app.workflow.exceptions import (
@@ -70,6 +70,49 @@ async def generate_jd_node(state: GraphState) -> GraphState:
         raise JDGenerationError(f"Invalid job input: {e}")
     except Exception as e:
         raise JDGenerationError(str(e))
+
+    return state
+
+
+async def optimize_jd_node(state: GraphState) -> GraphState:
+    """
+    Optimize an existing JD when candidate count is low.
+
+    This node:
+    1. Increments generation attempts
+    2. Calls AI to optimize the JD
+    3. Updates the JD in state
+    4. Resets posting timestamp to trigger re-indexing
+    """
+    if not state.jd.generated_jd:
+        raise JDGenerationError("Cannot optimize JD: No existing JD found.")
+
+    try:
+        # Increment attempts counter
+        state.jd.generation_attempts += 1
+
+        # Optimize JD
+        optimized_jd = await optimize_job_description(state.jd.generated_jd)
+        state.jd.generated_jd = optimized_jd
+
+        # Mark for re-posting/update
+        # We don't need to change is_posted to False if we just update the content
+        # But updating posted_at signals a new version
+        state.posting.posted_at = datetime.now(timezone.utc)
+
+        # Reset generation bypass flag to ensure we don't skip future steps if logic changes
+        state.jd.bypass_generation = False
+
+        # Reset approval status?
+        # User said "re-upload by their own", implying auto-approval.
+        # But for safety, we might want to keep it APPROVED since AI did it based on existing approved JD?
+        # If we go to POST_JOB directly, we skip approval check anyway (if edge allows).
+        # Let's keep approval as APPROVED or PENDING?
+        # If we loop to POST_JOB, check_jd_approval is NOT called (that's only after GENERATE).
+        # So it's fine.
+
+    except Exception as e:
+        raise JDGenerationError(f"JD Optimization failed: {str(e)}")
 
     return state
 

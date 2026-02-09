@@ -15,16 +15,18 @@ from app.workflow.constants import NodeName, WAIT_FOR_HUMAN
 
 # Type aliases for edge return types
 JDApprovalRoute = Literal["post_job", "__wait__"]
-RegenerateRoute = Literal["generate_jd", "shortlist_candidates", "__wait__"]
+RegenerateRoute = Literal[
+    "generate_jd", "shortlist_candidates", "optimize_jd", "__wait__"
+]
 ShortlistApprovalRoute = Literal["voice_prescreening", "__wait__"]
 RecruiterDecisionRoute = Literal["schedule_interview", "reject_candidate"]
 
 
 def should_regenerate_jd(state: GraphState) -> RegenerateRoute:
     """
-    Decide whether to regenerate JD based on applicant count.
+    Decide whether to regenerate/optimize JD based on applicant count.
 
-    If insufficient applicants and max attempts not reached, regenerate.
+    If insufficient applicants and max attempts not reached, optimize.
     Otherwise, proceed to shortlisting.
     """
     applicant_count = len(state.applicants.applicants)
@@ -34,9 +36,8 @@ def should_regenerate_jd(state: GraphState) -> RegenerateRoute:
     max_attempts = settings.max_jd_generation_attempts
 
     if applicant_count < threshold and attempts < max_attempts:
-        # Pause and wait for applicants instead of regenerating immediately
-        # Regeneration should be triggered manually if needed
-        return WAIT_FOR_HUMAN
+        # Instead of waiting, automatically optimize and re-post
+        return NodeName.OPTIMIZE_JD.value
 
     return NodeName.SHORTLIST_CANDIDATES.value
 

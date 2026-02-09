@@ -21,7 +21,9 @@ from app.workflow.nodes import (
     voice_prescreening_node,
     review_responses_node,
     schedule_interview_node,
+    schedule_interview_node,
     reject_candidate_node,
+    optimize_jd_node,
 )
 from app.workflow.edges import (
     should_regenerate_jd,
@@ -55,6 +57,7 @@ def build_recruitment_graph() -> StateGraph:
     workflow.add_node(NodeName.REVIEW_RESPONSES.value, review_responses_node)
     workflow.add_node(NodeName.SCHEDULE_INTERVIEW.value, schedule_interview_node)
     workflow.add_node(NodeName.REJECT_CANDIDATE.value, reject_candidate_node)
+    workflow.add_node(NodeName.OPTIMIZE_JD.value, optimize_jd_node)
 
     # Set entry point
     workflow.set_entry_point(NodeName.GENERATE_JD.value)
@@ -78,6 +81,7 @@ def build_recruitment_graph() -> StateGraph:
         {
             NodeName.GENERATE_JD.value: NodeName.GENERATE_JD.value,
             NodeName.SHORTLIST_CANDIDATES.value: NodeName.SHORTLIST_CANDIDATES.value,
+            NodeName.OPTIMIZE_JD.value: NodeName.OPTIMIZE_JD.value,
             WAIT_FOR_HUMAN: END,
         },
     )
@@ -92,7 +96,9 @@ def build_recruitment_graph() -> StateGraph:
         },
     )
 
-    workflow.add_edge(NodeName.VOICE_PRESCREENING.value, NodeName.REVIEW_RESPONSES.value)
+    workflow.add_edge(
+        NodeName.VOICE_PRESCREENING.value, NodeName.REVIEW_RESPONSES.value
+    )
 
     # Recruiter decision after prescreening
     workflow.add_conditional_edges(
@@ -103,6 +109,9 @@ def build_recruitment_graph() -> StateGraph:
             NodeName.REJECT_CANDIDATE.value: NodeName.REJECT_CANDIDATE.value,
         },
     )
+
+    # Loop back to posting after optimization
+    workflow.add_edge(NodeName.OPTIMIZE_JD.value, NodeName.POST_JOB.value)
 
     # Terminal nodes
     workflow.add_edge(NodeName.SCHEDULE_INTERVIEW.value, END)

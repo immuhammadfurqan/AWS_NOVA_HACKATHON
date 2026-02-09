@@ -179,6 +179,52 @@ Salary: {previous_jd.salary_range or 'Not specified'}
         raise
 
 
+async def optimize_job_description(previous_jd: GeneratedJD) -> GeneratedJD:
+    """
+    Optimize an existing job description to attract more candidates.
+
+    Args:
+        previous_jd: The currently generated JD
+
+    Returns:
+        GeneratedJD: Optimized job description
+    """
+    from app.ai.prompts import JD_OPTIMIZATION_PROMPT
+
+    # Format previous JD as readable text
+    previous_jd_text = f"""
+Job Title: {previous_jd.job_title}
+Summary: {previous_jd.summary}
+Description: {previous_jd.description}
+Responsibilities: {', '.join(previous_jd.responsibilities)}
+Requirements: {', '.join(previous_jd.requirements)}
+Nice to Have: {', '.join(previous_jd.nice_to_have)}
+Benefits: {', '.join(previous_jd.benefits)}
+Location: {previous_jd.location or 'Not specified'}
+Salary: {previous_jd.salary_range or 'Not specified'}
+"""
+
+    prompt = JD_OPTIMIZATION_PROMPT.format(previous_jd=previous_jd_text)
+
+    logger.info(
+        f"Optimizing JD for: {previous_jd.job_title} (provider: {'bedrock' if is_bedrock_provider() else 'openai'})"
+    )
+
+    try:
+        if is_bedrock_provider():
+            result = await _generate_with_bedrock(prompt)
+        else:
+            result = await _generate_with_openai(prompt)
+
+        jd_data = json.loads(result)
+        logger.info("JD optimized successfully")
+        return GeneratedJD(**jd_data)
+
+    except Exception as e:
+        logger.exception(f"JD optimization failed: {e}")
+        raise
+
+
 # ============================================================================
 # Provider-Specific Implementations
 # ============================================================================

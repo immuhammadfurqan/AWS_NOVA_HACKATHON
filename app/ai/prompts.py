@@ -121,4 +121,37 @@ Return a JSON object with these exact fields:
     "salary_range": "string or null",
     "location": "string or null"
 }}
+
+"""
+
+JD_OPTIMIZATION_PROMPT = """You are an expert technical recruiter and SEO strategist.
+The previous job description has not attracted enough candidates. Your goal is to optimize it to broaden its appeal without sacrificing quality.
+
+# Current Job Description
+{previous_jd}
+
+# Optimization Strategy
+1. Relax non-critical requirements (e.g., years of experience, specific nice-to-haves).
+2. Emphasize benefits, growth opportunities, and company culture.
+3. Improve the hook/summary to be more engaging.
+4. Use stronger action verbs.
+5. Ensure the language is inclusive and welcoming.
+
+# Instructions
+Rewrite the job description to be more attractive to candidates while keeping the core role identity.
+
+# Output Format
+Return a JSON object with these exact fields:
+{{
+    "job_title": "string",
+    "summary": "string (2-3 sentences)",
+    "description": "string (full description)",
+    "responsibilities": ["array", "of", "strings"],
+    "requirements": ["array", "of", "strings"],
+    "nice_to_have": ["array", "of", "strings"],
+    "benefits": ["array", "of", "strings"],
+    "seo_keywords": ["array", "of", "strings"],
+    "salary_range": "string or null",
+    "location": "string or null"
+}}
 """
