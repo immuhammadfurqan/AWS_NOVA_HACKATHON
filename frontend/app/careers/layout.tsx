@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { CareersLayoutClient } from './layout-client';
+import { CareersLayoutClient } from './CareersLayoutClient';
 
 export const metadata: Metadata = {
     title: 'Careers | AARLP',

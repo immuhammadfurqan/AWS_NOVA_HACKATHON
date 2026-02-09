@@ -27,8 +27,10 @@ from app.workflow.constants import NodeName
 # Nested State Models (Pydantic)
 # =============================================================================
 
+
 class JobDescriptionState(BaseModel):
     """State related to JD generation and approval."""
+
     input: Optional[JobInput] = None
     generated_jd: Optional[GeneratedJD] = None
     generation_attempts: int = 0
@@ -42,6 +44,7 @@ class JobDescriptionState(BaseModel):
 
 class JobPostingState(BaseModel):
     """State related to job posting."""
+
     is_posted: bool = False
     posting_url: Optional[str] = None
     posted_at: Optional[datetime] = None
@@ -49,6 +52,7 @@ class JobPostingState(BaseModel):
 
 class ApplicantState(BaseModel):
     """State related to applicants and shortlisting."""
+
     applicants: list[Applicant] = Field(default_factory=list)
     min_threshold: int = 5
     monitoring_start: Optional[datetime] = None
@@ -59,6 +63,7 @@ class ApplicantState(BaseModel):
 
 class PrescreeningState(BaseModel):
     """State related to prescreening."""
+
     questions: list[PrescreeningQuestion] = Field(default_factory=list)
     responses: dict[str, list[CandidateResponse]] = Field(default_factory=dict)
     is_complete: bool = False
@@ -66,6 +71,7 @@ class PrescreeningState(BaseModel):
 
 class InterviewState(BaseModel):
     """State related to interviews."""
+
     schedule_approved: bool = False
     scheduled: list[InterviewSlot] = Field(default_factory=list)
 
@@ -74,31 +80,33 @@ class InterviewState(BaseModel):
 # Main GraphState (Pydantic)
 # =============================================================================
 
+
 class GraphState(BaseModel):
     """
     Pydantic-based workflow state with full type safety.
-    
+
     Benefits over TypedDict:
     - Runtime validation of all fields
     - IDE autocomplete with attribute access (state.jd.input)
     - No manual dict-to-object conversions
     - Clear error messages on validation failures
     """
+
     # Identifiers
     job_id: str
     thread_id: Optional[str] = None
-    
+
     # Current Status
     current_node: str
     error_message: Optional[str] = None
-    
+
     # Nested state groups
     jd: JobDescriptionState = Field(default_factory=JobDescriptionState)
     posting: JobPostingState = Field(default_factory=JobPostingState)
     applicants: ApplicantState = Field(default_factory=ApplicantState)
     prescreening: PrescreeningState = Field(default_factory=PrescreeningState)
     interviews: InterviewState = Field(default_factory=InterviewState)
-    
+
     # Timestamps
     created_at: datetime
     updated_at: datetime
@@ -167,12 +175,13 @@ def create_initial_state(job_input: JobInput) -> GraphState:
 # State Validation
 # =============================================================================
 
+
 def validate_state_for_node(state: GraphState, target_node: NodeName) -> None:
     """
     Validate that state has required data for the target node.
-    
+
     Raises InvalidStateTransitionError if validation fails.
-    
+
     Args:
         state: Current graph state
         target_node: The node we want to transition to
@@ -183,7 +192,7 @@ def validate_state_for_node(state: GraphState, target_node: NodeName) -> None:
         NodeName.VOICE_PRESCREENING: _validate_for_prescreening,
         NodeName.SCHEDULE_INTERVIEW: _validate_for_scheduling,
     }
-    
+
     if validator := validators.get(target_node):
         validator(state)
 
@@ -191,14 +200,14 @@ def validate_state_for_node(state: GraphState, target_node: NodeName) -> None:
 def _validate_for_posting(state: GraphState) -> None:
     """Validate state has approved JD before posting."""
     from app.workflow.exceptions import InvalidStateTransitionError
-    
+
     if not state.jd.generated_jd:
         raise InvalidStateTransitionError(
             current_node=state.current_node,
             attempted_action=NodeName.POST_JOB.value,
             allowed_actions=[NodeName.GENERATE_JD.value],
         )
-    
+
     if state.jd.approval_status != ApprovalStatus.APPROVED:
         raise InvalidStateTransitionError(
             current_node=state.current_node,
@@ -210,14 +219,14 @@ def _validate_for_posting(state: GraphState) -> None:
 def _validate_for_shortlisting(state: GraphState) -> None:
     """Validate state has posted job and applicants before shortlisting."""
     from app.workflow.exceptions import InvalidStateTransitionError
-    
+
     if not state.posting.is_posted:
         raise InvalidStateTransitionError(
             current_node=state.current_node,
             attempted_action=NodeName.SHORTLIST_CANDIDATES.value,
             allowed_actions=[NodeName.POST_JOB.value],
         )
-    
+
     if not state.applicants.applicants:
         raise InvalidStateTransitionError(
             current_node=state.current_node,
@@ -229,14 +238,14 @@ def _validate_for_shortlisting(state: GraphState) -> None:
 def _validate_for_prescreening(state: GraphState) -> None:
     """Validate state has approved shortlist before prescreening."""
     from app.workflow.exceptions import InvalidStateTransitionError
-    
+
     if not state.applicants.shortlisted_ids:
         raise InvalidStateTransitionError(
             current_node=state.current_node,
             attempted_action=NodeName.VOICE_PRESCREENING.value,
             allowed_actions=[NodeName.SHORTLIST_CANDIDATES.value],
         )
-    
+
     if state.applicants.shortlist_approval != ApprovalStatus.APPROVED:
         raise InvalidStateTransitionError(
             current_node=state.current_node,
@@ -248,14 +257,14 @@ def _validate_for_prescreening(state: GraphState) -> None:
 def _validate_for_scheduling(state: GraphState) -> None:
     """Validate state has completed prescreening before scheduling."""
     from app.workflow.exceptions import InvalidStateTransitionError
-    
+
     if not state.prescreening.is_complete:
         raise InvalidStateTransitionError(
             current_node=state.current_node,
             attempted_action=NodeName.SCHEDULE_INTERVIEW.value,
             allowed_actions=[NodeName.VOICE_PRESCREENING.value],
         )
-    
+
     if not state.interviews.schedule_approved:
         raise InvalidStateTransitionError(
             current_node=state.current_node,

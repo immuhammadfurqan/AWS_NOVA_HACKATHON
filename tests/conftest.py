@@ -26,6 +26,7 @@ from app.interviews.schemas import PrescreeningQuestion
 # Event Loop Configuration
 # ============================================================================
 
+
 @pytest.fixture(scope="session")
 def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
     """Create an event loop for async tests."""
@@ -37,6 +38,7 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
 # ============================================================================
 # Settings Fixtures
 # ============================================================================
+
 
 @pytest.fixture
 def test_settings() -> Settings:
@@ -52,6 +54,7 @@ def test_settings() -> Settings:
 # ============================================================================
 # Client Fixtures
 # ============================================================================
+
 
 @pytest.fixture
 def client() -> Generator[TestClient, None, None]:
@@ -70,6 +73,7 @@ async def async_client() -> AsyncGenerator[AsyncClient, None]:
 # ============================================================================
 # Model Fixtures
 # ============================================================================
+
 
 @pytest.fixture
 def sample_job_input() -> JobInput:
@@ -165,6 +169,7 @@ def sample_prescreening_questions() -> list[PrescreeningQuestion]:
 # ============================================================================
 # Utility Fixtures
 # ============================================================================
+
 
 @pytest.fixture
 def mock_openai_response():

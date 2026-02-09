@@ -22,6 +22,7 @@ from app.workflow.exceptions import InvalidStateTransitionError
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def sample_job_input() -> JobInput:
     """Create a sample job input for testing."""
@@ -68,6 +69,7 @@ def initial_state(sample_job_input: JobInput) -> GraphState:
 # Test Validate for POST_JOB
 # =============================================================================
 
+
 class TestValidateForPosting:
     """Tests for _validate_for_posting function."""
 
@@ -75,33 +77,33 @@ class TestValidateForPosting:
         """Test that error is raised when no JD is generated."""
         with pytest.raises(InvalidStateTransitionError) as exc_info:
             validate_state_for_node(initial_state, NodeName.POST_JOB)
-        
+
         assert exc_info.value.details["attempted_action"] == NodeName.POST_JOB.value
         assert NodeName.GENERATE_JD.value in exc_info.value.details["allowed_actions"]
 
     def test_raises_when_jd_not_approved(
-        self, 
-        initial_state: GraphState, 
+        self,
+        initial_state: GraphState,
         sample_generated_jd: GeneratedJD,
     ):
         """Test that error is raised when JD exists but not approved."""
         initial_state.jd.generated_jd = sample_generated_jd
         initial_state.jd.approval_status = ApprovalStatus.PENDING
-        
+
         with pytest.raises(InvalidStateTransitionError) as exc_info:
             validate_state_for_node(initial_state, NodeName.POST_JOB)
-        
+
         assert "approve_jd" in exc_info.value.details["allowed_actions"]
 
     def test_passes_when_jd_approved(
-        self, 
-        initial_state: GraphState, 
+        self,
+        initial_state: GraphState,
         sample_generated_jd: GeneratedJD,
     ):
         """Test that validation passes when JD is approved."""
         initial_state.jd.generated_jd = sample_generated_jd
         initial_state.jd.approval_status = ApprovalStatus.APPROVED
-        
+
         # Should not raise
         validate_state_for_node(initial_state, NodeName.POST_JOB)
 
@@ -110,42 +112,46 @@ class TestValidateForPosting:
 # Test Validate for SHORTLIST_CANDIDATES
 # =============================================================================
 
+
 class TestValidateForShortlisting:
     """Tests for _validate_for_shortlisting function."""
 
     def test_raises_when_job_not_posted(
-        self, 
+        self,
         initial_state: GraphState,
         sample_applicant: Applicant,
     ):
         """Test that error is raised when job not posted."""
         initial_state.applicants.applicants = [sample_applicant]
         initial_state.posting.is_posted = False
-        
+
         with pytest.raises(InvalidStateTransitionError) as exc_info:
             validate_state_for_node(initial_state, NodeName.SHORTLIST_CANDIDATES)
-        
+
         assert NodeName.POST_JOB.value in exc_info.value.details["allowed_actions"]
 
     def test_raises_when_no_applicants(self, initial_state: GraphState):
         """Test that error is raised when no applicants."""
         initial_state.posting.is_posted = True
         initial_state.applicants.applicants = []
-        
+
         with pytest.raises(InvalidStateTransitionError) as exc_info:
             validate_state_for_node(initial_state, NodeName.SHORTLIST_CANDIDATES)
-        
-        assert NodeName.MONITOR_APPLICATIONS.value in exc_info.value.details["allowed_actions"]
+
+        assert (
+            NodeName.MONITOR_APPLICATIONS.value
+            in exc_info.value.details["allowed_actions"]
+        )
 
     def test_passes_when_job_posted_and_has_applicants(
-        self, 
+        self,
         initial_state: GraphState,
         sample_applicant: Applicant,
     ):
         """Test that validation passes when conditions are met."""
         initial_state.posting.is_posted = True
         initial_state.applicants.applicants = [sample_applicant]
-        
+
         # Should not raise
         validate_state_for_node(initial_state, NodeName.SHORTLIST_CANDIDATES)
 
@@ -154,41 +160,45 @@ class TestValidateForShortlisting:
 # Test Validate for VOICE_PRESCREENING
 # =============================================================================
 
+
 class TestValidateForPrescreening:
     """Tests for _validate_for_prescreening function."""
 
     def test_raises_when_no_shortlisted_candidates(self, initial_state: GraphState):
         """Test that error is raised when no shortlisted candidates."""
         initial_state.applicants.shortlisted_ids = []
-        
+
         with pytest.raises(InvalidStateTransitionError) as exc_info:
             validate_state_for_node(initial_state, NodeName.VOICE_PRESCREENING)
-        
-        assert NodeName.SHORTLIST_CANDIDATES.value in exc_info.value.details["allowed_actions"]
+
+        assert (
+            NodeName.SHORTLIST_CANDIDATES.value
+            in exc_info.value.details["allowed_actions"]
+        )
 
     def test_raises_when_shortlist_not_approved(
-        self, 
+        self,
         initial_state: GraphState,
         sample_applicant: Applicant,
     ):
         """Test that error is raised when shortlist not approved."""
         initial_state.applicants.shortlisted_ids = [str(sample_applicant.id)]
         initial_state.applicants.shortlist_approval = ApprovalStatus.PENDING
-        
+
         with pytest.raises(InvalidStateTransitionError) as exc_info:
             validate_state_for_node(initial_state, NodeName.VOICE_PRESCREENING)
-        
+
         assert "approve_shortlist" in exc_info.value.details["allowed_actions"]
 
     def test_passes_when_shortlist_approved(
-        self, 
+        self,
         initial_state: GraphState,
         sample_applicant: Applicant,
     ):
         """Test that validation passes when shortlist is approved."""
         initial_state.applicants.shortlisted_ids = [str(sample_applicant.id)]
         initial_state.applicants.shortlist_approval = ApprovalStatus.APPROVED
-        
+
         # Should not raise
         validate_state_for_node(initial_state, NodeName.VOICE_PRESCREENING)
 
@@ -197,33 +207,37 @@ class TestValidateForPrescreening:
 # Test Validate for SCHEDULE_INTERVIEW
 # =============================================================================
 
+
 class TestValidateForScheduling:
     """Tests for _validate_for_scheduling function."""
 
     def test_raises_when_prescreening_incomplete(self, initial_state: GraphState):
         """Test that error is raised when prescreening incomplete."""
         initial_state.prescreening.is_complete = False
-        
+
         with pytest.raises(InvalidStateTransitionError) as exc_info:
             validate_state_for_node(initial_state, NodeName.SCHEDULE_INTERVIEW)
-        
-        assert NodeName.VOICE_PRESCREENING.value in exc_info.value.details["allowed_actions"]
+
+        assert (
+            NodeName.VOICE_PRESCREENING.value
+            in exc_info.value.details["allowed_actions"]
+        )
 
     def test_raises_when_schedule_not_approved(self, initial_state: GraphState):
         """Test that error is raised when schedule not approved."""
         initial_state.prescreening.is_complete = True
         initial_state.interviews.schedule_approved = False
-        
+
         with pytest.raises(InvalidStateTransitionError) as exc_info:
             validate_state_for_node(initial_state, NodeName.SCHEDULE_INTERVIEW)
-        
+
         assert "approve_schedule" in exc_info.value.details["allowed_actions"]
 
     def test_passes_when_all_conditions_met(self, initial_state: GraphState):
         """Test that validation passes when all conditions are met."""
         initial_state.prescreening.is_complete = True
         initial_state.interviews.schedule_approved = True
-        
+
         # Should not raise
         validate_state_for_node(initial_state, NodeName.SCHEDULE_INTERVIEW)
 
@@ -231,6 +245,7 @@ class TestValidateForScheduling:
 # =============================================================================
 # Test Nodes Without Validation
 # =============================================================================
+
 
 class TestNodesWithoutValidation:
     """Test that some nodes don't require validation."""
