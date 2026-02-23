@@ -131,7 +131,7 @@ class Settings(BaseSettings):
     # ----------------------------
     # Authentication
     # ----------------------------
-    secret_key: str  # must be set in .env
+    secret_key: str = "dev-secret-key-change-in-production"  # Set SECRET_KEY in .env for production
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
