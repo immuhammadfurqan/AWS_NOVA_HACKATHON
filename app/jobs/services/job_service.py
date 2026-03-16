@@ -88,16 +88,21 @@ class JobService:
             raise RecordNotFoundError("Job State", job_id)
         return state
 
-    async def create_job(self, job_input: JobInput, user: User) -> JobCreateResponse:
+    async def create_job(
+        self, job_input: JobInput, user: User
+    ) -> tuple[JobCreateResponse, GraphState]:
         """
-        Create new recruitment job and initialize workflow.
+        Create new recruitment job and return immediately.
+
+        Does NOT run the workflow (JD generation). The workflow must be
+        executed in a background task to avoid blocking the API response.
 
         Args:
             job_input: Job creation parameters
             user: Current user
 
         Returns:
-            Job creation response with ID and status
+            Tuple of (JobCreateResponse, initial GraphState for background execution)
         """
         self.logger.info("Creating job", extra={"role": job_input.role_title})
 
@@ -106,7 +111,6 @@ class JobService:
 
         job_record = self._create_job_record(job_input, job_id, user)
         await self.repository.create(job_record)
-        await self.workflow_engine.invoke(initial_state, job_id)
 
         self._log_operation(
             "create_job",
@@ -114,12 +118,13 @@ class JobService:
             details={"job_id": job_id, "role": job_input.role_title},
         )
 
-        return JobCreateResponse(
+        response = JobCreateResponse(
             job_id=UUID(job_id),
             thread_id=job_id,
             message="Recruitment process started. JD generation in progress.",
             current_node=RecruitmentNodeStatus.GENERATE_JD,
         )
+        return response, initial_state
 
     def _create_job_record(
         self, job_input: JobInput, job_id: str, user: User
@@ -145,6 +150,12 @@ class JobService:
 
         try:
             state = await self.get_job_state(job_id)
+            # Sync DB current_node with workflow state so Jobs list shows correct status
+            if state.current_node != job_record.current_node:
+                await self.repository.update(
+                    UUID(job_id),
+                    current_node=state.current_node,
+                )
             return StatusBuilder.from_state(state)
         except RecordNotFoundError:
             return StatusBuilder.from_record(job_record)
@@ -338,6 +349,19 @@ class JobService:
             JobListResponse with list of user's jobs
         """
         jobs = await self.repository.get_by_user_id(user.id)
+
+        # Keep list status aligned with workflow state for already-running jobs.
+        for job in jobs:
+            try:
+                state = await self.workflow_engine.get_state(str(job.id))
+                if state and state.current_node != job.current_node:
+                    await self.repository.update(job.id, current_node=state.current_node)
+                    job.current_node = state.current_node
+            except Exception as e:
+                self.logger.debug(
+                    "Skipping workflow sync for job list item",
+                    extra={"job_id": str(job.id), "error": str(e)},
+                )
 
         job_items = [
             JobListItem(

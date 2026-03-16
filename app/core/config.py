@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     # ----------------------------
     # Database
     # ----------------------------
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/aarlp"
+    database_url: str = "postgresql+asyncpg://postgres:postgres@127.0.0.1:5433/aarlp"
 
     # ----------------------------
     # Pinecone / Vector DB
@@ -72,14 +72,17 @@ class Settings(BaseSettings):
     aws_access_key_id: str = ""
     aws_secret_access_key: str = ""
     aws_region: str = "us-east-1"
-    bedrock_model_id: str = "amazon.nova-lite-v1:0"
-    bedrock_embedding_model_id: str = "amazon.titan-embed-text-v2:0"
+    # Nova 2 Lite: fast reasoning for JD generation (hackathon requirement)
+    bedrock_model_id: str = "global.amazon.nova-2-lite-v1:0"
+    # Nova 2 Multimodal Embeddings: text, image, video, audio in unified space
+    bedrock_embedding_model_id: str = "amazon.nova-2-multimodal-embeddings-v1:0"
+    # 1024 supported by both Titan and Nova 2 Multimodal (3072, 1024, 384, 256)
     bedrock_embedding_dimension: int = 1024
 
     # ----------------------------
     # Voice AI
     # ----------------------------
-    voice_provider: Literal["twilio", "elevenlabs"] = "twilio"
+    voice_provider: Literal["twilio", "elevenlabs", "nova_sonic"] = "twilio"
 
     # Twilio
     twilio_account_sid: str = ""
@@ -107,7 +110,7 @@ class Settings(BaseSettings):
     application_monitoring_enabled: bool = False  # Auto-monitoring of applications
 
     llm_temperature: float = 0.7
-    shortlist_similarity_threshold: float = 0.7
+    shortlist_similarity_threshold: float = 0.6
     max_jd_generation_attempts: int = 3
     prescreening_max_score: int = 100
     max_embedding_text_length: int = 8000

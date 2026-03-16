@@ -87,7 +87,7 @@ class TestJobService:
     def mock_settings(self):
         """Mock settings."""
         settings = MagicMock()
-        settings.shortlist_similarity_threshold = 0.7
+        settings.shortlist_similarity_threshold = 0.6
         return settings
 
     @pytest.mark.asyncio

@@ -66,7 +66,7 @@ class TestCandidateShortlisting:
 
     def test_similarity_threshold_shortlisting(self):
         """Candidates above threshold should be shortlisted."""
-        threshold = 0.7
+        threshold = 0.6
 
         high_score = 0.85
         low_score = 0.5

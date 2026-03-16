@@ -5,21 +5,13 @@ Centralized configuration values for AI operations.
 """
 
 
-# AWS Bedrock Nova Models
+# AWS Bedrock Nova 2 Models
 class NovaModels:
-    """AWS Bedrock Nova model identifiers."""
+    """AWS Bedrock Nova 2 model identifiers."""
 
-    LITE = "amazon.nova-lite-v1:0"
-    PRO = "amazon.nova-pro-v1:0"
-    MICRO = "amazon.nova-micro-v1:0"
-
-
-# AWS Titan Embedding
-class TitanEmbedding:
-    """AWS Titan embedding configuration."""
-
-    MODEL_ID = "amazon.titan-embed-text-v2:0"
-    DIMENSION = 1024
+    LITE = "global.amazon.nova-2-lite-v1:0"
+    MULTIMODAL_EMBEDDINGS = "amazon.nova-2-multimodal-embeddings-v1:0"
+    SONIC = "amazon.nova-2-sonic-v1:0"
 
 
 # OpenAI Models (Fallback)

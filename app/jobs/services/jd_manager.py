@@ -125,4 +125,11 @@ class JDManager:
             jd_approval_status=ApprovalStatus.APPROVED.value,
             generated_jd=jd_data,
         )
-        await self.workflow_engine.update_and_resume(job_id, state)
+        resumed_state = await self.workflow_engine.update_and_resume(job_id, state)
+
+        # Persist the resumed node so list endpoints don't stay stuck on "post_job".
+        if resumed_state and resumed_state.current_node:
+            await self.repository.update(
+                UUID(job_id),
+                current_node=resumed_state.current_node,
+            )

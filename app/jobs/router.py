@@ -56,14 +56,13 @@ async def create_job(
     """
     Create a new recruitment process.
 
-    This triggers the LangGraph workflow starting with JD generation.
+    Returns immediately; JD generation runs in the background.
     """
-    response = await service.create_job(job_input, user)
+    response, initial_state = await service.create_job(job_input, user)
 
-    # Schedule background graph execution
-    state = await service.get_job_state(str(response.job_id))
+    # Run workflow (including JD generation) in background to avoid blocking
     background_tasks.add_task(
-        service.execute_graph_background, str(response.job_id), state
+        service.execute_graph_background, str(response.job_id), initial_state
     )
 
     return response

@@ -50,11 +50,50 @@ export default function JobDetailView({ jobId, initialStatus, initialJD }: JobDe
         );
     }
 
-    // Show loading state while JD is being generated
+    // Show loading state while JD is being generated, or error if generation failed
     if (status && !status.has_generated_jd) {
+        if (status.error_message) {
+            return (
+                <div className="space-y-8">
+                    <WorkflowProgressBar currentNode={status.current_node} />
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex flex-col items-center justify-center min-h-[300px] text-center"
+                    >
+                        <div className="rounded-full bg-destructive/10 p-4 mb-4">
+                            <AlertCircle className="h-8 w-8 text-destructive" />
+                        </div>
+                        <h2 className="text-xl font-semibold text-foreground mb-2">
+                            JD Generation Failed
+                        </h2>
+                        <p className="text-muted-foreground mb-4 max-w-md">
+                            {status.error_message}
+                        </p>
+                        <p className="text-sm text-muted-foreground mb-4">
+                            Check that your AWS Bedrock Nova models are enabled. Try refreshing or use legacy models in .env.
+                        </p>
+                        <Button onClick={refresh} variant="outline">
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Retry
+                        </Button>
+                    </motion.div>
+                </div>
+            );
+        }
         return (
             <div className="space-y-8">
                 <WorkflowProgressBar currentNode={status.current_node} />
+                <JDLoadingState />
+            </div>
+        );
+    }
+
+    // JD is generated (per status) but not fetched yet – show loading instead of flash "not available"
+    if (status?.has_generated_jd && !jd) {
+        return (
+            <div className="space-y-8">
+                {status && <WorkflowProgressBar currentNode={status.current_node} />}
                 <JDLoadingState />
             </div>
         );

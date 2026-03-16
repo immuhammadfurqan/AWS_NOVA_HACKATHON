@@ -50,6 +50,33 @@ class VoiceProvider:
         raise NotImplementedError
 
 
+class NovaSonicVoiceProvider(VoiceProvider):
+    """
+    Nova 2 Sonic voice provider for real-time conversational AI.
+
+    Full integration uses Bedrock's InvokeModelWithBidirectionalStream for
+    speech-to-speech with Nova 2 Sonic, typically via Amazon Connect or
+    telephony (Twilio, Vonage). For now, delegates to Twilio for call
+    orchestration; voice response scoring uses Nova 2 Lite (see score_response).
+    """
+
+    async def initiate_call(
+        self,
+        phone_number: str,
+        questions: list[PrescreeningQuestion],
+        candidate_name: str,
+        job_title: str,
+    ) -> str:
+        """Delegate to Twilio for call setup; full Nova Sonic would stream audio to Bedrock."""
+        return await TwilioVoiceProvider().initiate_call(
+            phone_number, questions, candidate_name, job_title
+        )
+
+    async def get_call_results(self, call_id: str) -> list[dict]:
+        """Delegate to Twilio for results."""
+        return await TwilioVoiceProvider().get_call_results(call_id)
+
+
 class TwilioVoiceProvider(VoiceProvider):
     """Twilio-based voice provider."""
 
@@ -215,17 +242,11 @@ async def score_response(
     transcript: str, question: PrescreeningQuestion
 ) -> tuple[int, str]:
     """
-    Score a candidate's response using AI.
+    Score a candidate's response using AI (Nova 2 Lite when Bedrock, else OpenAI).
 
-    Args:
-        transcript: Transcribed response
-        question: The question that was asked
-
-    Returns:
-        Tuple of (score, rationale)
+    When AI_PROVIDER=bedrock, uses Amazon Nova 2 Lite for consistent hackathon alignment.
     """
-    settings = get_settings()
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    from app.ai.client import is_bedrock_provider
 
     prompt = f"""You are evaluating a candidate's response to a prescreening question.
 
@@ -246,15 +267,26 @@ Respond with JSON only:
 {{"score": <number>, "rationale": "<brief explanation>"}}
 """
 
-    response = await client.chat.completions.create(
-        model=settings.openai_model,
-        messages=[{"role": "user", "content": prompt}],
-        response_format={"type": "json_object"},
-    )
+    if is_bedrock_provider():
+        from app.ai.bedrock_client import invoke_nova_model
 
-    result = json.loads(response.choices[0].message.content)
+        raw = await invoke_nova_model(
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+        )
+        result = json.loads(raw)
+    else:
+        settings = get_settings()
+        client = AsyncOpenAI(api_key=settings.openai_api_key)
+        response = await client.chat.completions.create(
+            model=settings.openai_model,
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+        )
+        result = json.loads(response.choices[0].message.content)
 
-    return result["score"], result["rationale"]
+    score = min(question.max_score, max(0, int(result.get("score", 50))))
+    return score, result.get("rationale", "No rationale provided")
 
 
 # ============================================================================
@@ -285,8 +317,9 @@ async def conduct_prescreening_calls(
         provider = MockVoiceProvider()
     elif settings.voice_provider == "twilio":
         provider = TwilioVoiceProvider()
+    elif settings.voice_provider == "nova_sonic":
+        provider = NovaSonicVoiceProvider()
     else:
-        # Default to mock for now
         provider = MockVoiceProvider()
 
     all_responses: dict[str, list[CandidateResponse]] = {}

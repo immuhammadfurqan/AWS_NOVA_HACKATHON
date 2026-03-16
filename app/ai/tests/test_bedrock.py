@@ -1,42 +1,43 @@
 """
 AI Bedrock Client Tests
 
-Unit tests for AWS Bedrock Nova integration.
+Unit tests for AWS Bedrock Nova 2 integration.
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
-from app.ai.constants import NovaModels, TitanEmbedding, GenerationSettings
+from app.ai.constants import NovaModels, GenerationSettings
+from app.ai.bedrock_client import NovaModelId
 
 
 class TestNovaModelsConstants:
-    """Tests for Nova model constants."""
+    """Tests for Nova 2 model constants."""
 
-    def test_nova_lite_model_id(self):
-        """Nova Lite model ID should be valid."""
-        assert "nova-lite" in NovaModels.LITE
+    def test_nova_2_lite_model_id(self):
+        """Nova 2 Lite model ID should be valid."""
+        assert "nova-2-lite" in NovaModels.LITE
         assert "amazon." in NovaModels.LITE
 
-    def test_nova_pro_model_id(self):
-        """Nova Pro model ID should be valid."""
-        assert "nova-pro" in NovaModels.PRO
+    def test_nova_2_multimodal_embeddings_model_id(self):
+        """Nova 2 Multimodal Embeddings model ID should be valid."""
+        assert "nova-2-multimodal-embeddings" in NovaModels.MULTIMODAL_EMBEDDINGS
 
-    def test_nova_micro_model_id(self):
-        """Nova Micro model ID should be valid."""
-        assert "nova-micro" in NovaModels.MICRO
+    def test_nova_2_sonic_model_id(self):
+        """Nova 2 Sonic model ID should be valid."""
+        assert "nova-2-sonic" in NovaModels.SONIC
 
 
-class TestTitanEmbeddingConstants:
-    """Tests for Titan embedding constants."""
+class TestNovaModelIdEnum:
+    """Tests for NovaModelId enum."""
 
-    def test_titan_model_id(self):
-        """Titan model ID should be valid."""
-        assert "titan" in TitanEmbedding.MODEL_ID.lower()
+    def test_nova_2_lite(self):
+        """Nova 2 Lite should match constants."""
+        assert NovaModelId.NOVA_2_LITE.value == NovaModels.LITE
 
-    def test_titan_dimension(self):
-        """Titan dimension should be 1024."""
-        assert TitanEmbedding.DIMENSION == 1024
+    def test_nova_2_multimodal_embeddings(self):
+        """Nova 2 Multimodal Embeddings should match constants."""
+        assert NovaModelId.NOVA_2_MULTIMODAL_EMBEDDINGS.value == NovaModels.MULTIMODAL_EMBEDDINGS
 
 
 class TestGenerationSettings:
@@ -52,60 +53,8 @@ class TestGenerationSettings:
         assert GenerationSettings.MAX_TOKENS_FEEDBACK > 0
 
 
-class TestBedrockClient:
-    """Tests for BedrockClient class."""
-
-    @pytest.fixture
-    def mock_bedrock_runtime(self):
-        """Mock boto3 bedrock-runtime client."""
-        with patch("boto3.client") as mock:
-            yield mock
-
-    def test_client_initialization(self, mock_bedrock_runtime):
-        """Client should initialize with AWS credentials."""
-        from app.ai.bedrock_client import BedrockClient
-
-        client = BedrockClient()
-
-        # Client should be created
-        assert client is not None
-
-    @pytest.mark.asyncio
-    async def test_generate_jd_returns_dict(self, mock_bedrock_runtime):
-        """JD generation should return structured dict."""
-        # This would be an integration test with mocked AWS
-        pass
-
-    @pytest.mark.asyncio
-    async def test_generate_jd_handles_error(self, mock_bedrock_runtime):
-        """JD generation should handle AWS errors gracefully."""
-        # Mock AWS error
-        mock_bedrock_runtime.return_value.invoke_model.side_effect = Exception(
-            "AWS Error"
-        )
-
-        # Should raise or return error response
-        pass
-
-
 class TestJDGeneration:
     """Tests for JD generation functionality."""
-
-    def test_jd_prompt_includes_required_fields(self):
-        """JD prompt should include all required fields."""
-        from app.ai.bedrock_client import BedrockClient
-
-        client = BedrockClient()
-
-        # Test prompt generation
-        job_input = {
-            "title": "Software Engineer",
-            "department": "Engineering",
-            "company_name": "TechCorp",
-        }
-
-        # Prompt should be generated correctly
-        # Add actual prompt generation test
 
     def test_jd_response_validation(self):
         """JD response should match expected schema."""

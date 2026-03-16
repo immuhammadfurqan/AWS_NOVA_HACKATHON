@@ -28,19 +28,16 @@ logger = get_logger(__name__)
 
 
 class NovaModelId(str, Enum):
-    """AWS Nova model identifiers for Amazon Bedrock."""
+    """AWS Nova 2 model identifiers for Amazon Bedrock."""
 
-    # Text generation models
-    NOVA_LITE = "amazon.nova-lite-v1:0"
-    NOVA_PRO = "amazon.nova-pro-v1:0"
-    NOVA_PREMIER = "amazon.nova-premier-v1:0"
+    # Text generation
+    NOVA_2_LITE = "global.amazon.nova-2-lite-v1:0"
 
-    # Multimodal embedding
-    NOVA_EMBED_TEXT = "amazon.titan-embed-text-v2:0"
-    NOVA_EMBED_MULTIMODAL = "amazon.titan-embed-image-v1:0"
+    # Embeddings
+    NOVA_2_MULTIMODAL_EMBEDDINGS = "amazon.nova-2-multimodal-embeddings-v1:0"
 
-    # Voice / Sonic (for future Voice AI category)
-    NOVA_SONIC = "amazon.nova-sonic-v1:0"
+    # Voice / conversational AI
+    NOVA_2_SONIC = "amazon.nova-2-sonic-v1:0"
 
 
 # Retry configuration for Bedrock API calls
@@ -178,7 +175,9 @@ async def generate_embedding(
     model_id: Optional[str] = None,
 ) -> list[float]:
     """
-    Generate embeddings using AWS Nova/Titan embedding model.
+    Generate embeddings using AWS Nova 2 Multimodal Embeddings.
+
+    Supports text, image, video, audio in a unified semantic space.
 
     Args:
         text: Text to embed
@@ -191,13 +190,15 @@ async def generate_embedding(
 
     settings = get_settings()
     model_id = model_id or settings.bedrock_embedding_model_id
+    truncated_text = text[: settings.max_embedding_text_length]
 
-    # Titan embedding request format
-    # Use configured dimension instead of hardcoded value
     request_body = {
-        "inputText": text[: settings.max_embedding_text_length],
-        "dimensions": settings.bedrock_embedding_dimension,
-        "normalize": True,
+        "taskType": "SINGLE_EMBEDDING",
+        "singleEmbeddingParams": {
+            "embeddingPurpose": "GENERIC_INDEX",
+            "embeddingDimension": settings.bedrock_embedding_dimension,
+            "text": {"truncationMode": "END", "value": truncated_text},
+        },
     }
 
     try:
@@ -211,8 +212,15 @@ async def generate_embedding(
 
             response_body = await response["body"].read()
             response_json = json.loads(response_body)
-
-            return response_json.get("embedding", [])
+            # Nova 2 Multimodal: response has "embeddings" array, each with "embedding" vector
+            embeddings = response_json.get("embeddings", [])
+            if embeddings:
+                vec = embeddings[0].get("embedding") or []
+                if vec:
+                    return vec
+            raise BedrockInvocationError(
+                "Embedding response missing or empty; check model response format"
+            )
 
     except ClientError as e:
         error_message = e.response.get("Error", {}).get("Message", str(e))
@@ -234,7 +242,7 @@ async def test_bedrock_connection() -> bool:
         async with get_async_bedrock_client() as client:
             # Simple test invoke with minimal tokens
             response = await client.invoke_model(
-                modelId=NovaModelId.NOVA_LITE.value,
+                modelId=NovaModelId.NOVA_2_LITE.value,
                 contentType="application/json",
                 accept="application/json",
                 body=json.dumps(

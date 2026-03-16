@@ -1,6 +1,20 @@
 # AARLP - AI-Agentic Recruitment Lifecycle Platform
 
-Welcome to **AARLP**, an advanced **AI-Agentic Recruitment Lifecycle Platform** designed to automate the end-to-end hiring pipeline. From generating SEO-optimized Job Descriptions to conducting AI voice prescreening interviews, AARLP leverages state-of-the-art AI agents (LangGraph, OpenAI) to streamline recruitment.
+Welcome to **AARLP**, an advanced **AI-Agentic Recruitment Lifecycle Platform** designed to automate the end-to-end hiring pipeline. From generating SEO-optimized Job Descriptions to conducting AI voice prescreening interviews, AARLP leverages state-of-the-art AI agents (LangGraph, **Amazon Nova on AWS Bedrock**) to streamline recruitment.
+
+---
+
+## ☁️ Amazon Nova Integration (AWS Nova Hackathon)
+
+AARLP is built on **Amazon Nova foundation models via AWS Bedrock** as the primary AI layer:
+
+| Nova Model | Usage |
+|------------|-------|
+| **Nova 2 Lite** (`global.amazon.nova-2-lite-v1:0`) | Job Description generation, regeneration, prescreening question creation, candidate response scoring |
+| **Nova 2 Multimodal Embeddings** (`amazon.nova-2-multimodal-embeddings-v1:0`) | Semantic candidate ranking — 1024-dim vectors stored in Pinecone |
+| **Nova 2 Sonic** (`amazon.nova-2-sonic-v1:0`) | Voice prescreening provider option (`VOICE_PROVIDER=nova_sonic`) |
+
+Set `AI_PROVIDER=bedrock` in `.env` (the default) to activate Nova. OpenAI is available as an optional fallback only.
 
 ---
 
@@ -8,13 +22,13 @@ Welcome to **AARLP**, an advanced **AI-Agentic Recruitment Lifecycle Platform** 
 
 ### 🧠 Core Intelligence (AI Agents)
 - **AI-Powered JD Ecosystem**:
-    - **Generation**: Uses OpenAI to research industry standards and craft compelling JDs.
+    - **Generation**: Uses **Amazon Nova 2 Lite** (via AWS Bedrock) to research industry standards and craft compelling JDs.
     - **Regeneration & Feedback**: Recruiters can provide feedback to the AI to refine JDs or manually edit specific sections.
 - **Agentic Workflow**:
     - Powered by **LangGraph** for robust, stateful orchestration.
     - Implementation of **Checkpointers** for persistent workflow state management (pause/resume capabilities).
-- **Semantic Matching**: Uses **Pinecone** and OpenAI Embeddings to semantically post-screen and rank candidates against job requirements, going beyond keyword matching.
-- **Voice AI Prescreening** (Foundation): Architecture ready for automated phone screening using Twilio/ElevenLabs to assess candidate communication.
+- **Semantic Matching**: Uses **Pinecone** and **Amazon Nova 2 Multimodal Embeddings** (via AWS Bedrock) to semantically post-screen and rank candidates against job requirements, going beyond keyword matching.
+- **Voice AI Prescreening** (Foundation): Architecture ready for automated phone screening using **Nova 2 Sonic** (or Twilio) to assess candidate communication.
 
 ### 🎨 Modern Frontend Experience
 - **Next.js 14 App Router**: Server-side rendering for optimal performance.
@@ -43,7 +57,7 @@ Welcome to **AARLP**, an advanced **AI-Agentic Recruitment Lifecycle Platform** 
 | **Backend API** | **FastAPI** | High-performance, async Python web framework. |
 | **Frontend** | **Next.js 14** | React framework with TypeScript, Tailwind CSS, Next-Themes. |
 | **Orchestration** | **LangGraph** | Stateful graph-based workflow for AI agents (Nodes/Edges). |
-| **LLM** | **OpenAI GPT-4** | Intelligence engine for agents, generation, and embeddings. |
+| **LLM** | **Amazon Nova 2 Lite (AWS Bedrock)** | Primary intelligence engine for JD generation, reasoning, and embeddings. OpenAI GPT-4 available as optional fallback. |
 | **Database** | **PostgreSQL** | Primary relational database with async support. |
 | **Vector DB** | **Pinecone** | Serverless vector database for semantic search. |
 | **Voice AI** | **Twilio / ElevenLabs** | Telephony and Text-to-Speech infrastructure (Modules ready). |
@@ -58,7 +72,7 @@ The project follows a **Clean Architecture** inspired modular structure with emp
 aarlp/
 ├── app/                      # FastAPI Application
 │   ├── ai/                   # AI Logic (Embeddings, Voice, JD Generation)
-│   │   ├── client.py         # OpenAI client wrapper
+│   │   ├── client.py         # AI provider client (Bedrock primary, OpenAI fallback)
 │   │   ├── embeddings.py     # Pinecone vector operations
 │   │   ├── jd_generator.py   # Job description AI generation
 │   │   ├── voice_agent.py    # Voice prescreening agent
@@ -265,9 +279,19 @@ Create a `.env` file in the root directory (see `.env.example`):
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL Connection String |
-| `OPENAI_API_KEY` | OpenAI API Key |
+| `AWS_ACCESS_KEY_ID` | AWS Access Key (for Bedrock / Nova models) |
+| `AWS_SECRET_ACCESS_KEY` | AWS Secret Key (for Bedrock / Nova models) |
+| `AWS_REGION` | AWS Region (default: `us-east-1`) |
 | `SECRET_KEY` | JWT Signing Key |
-| `REDIS_URL` | Redis connection for distributed locking |
+| `REDIS_HOST` | Redis host for distributed locking |
+
+### AI Provider (AWS Bedrock — default)
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `AI_PROVIDER` | `bedrock` or `openai` | `bedrock` |
+| `BEDROCK_MODEL_ID` | Nova model for text generation | `global.amazon.nova-2-lite-v1:0` |
+| `BEDROCK_EMBEDDING_MODEL_ID` | Nova model for embeddings | `amazon.nova-2-multimodal-embeddings-v1:0` |
+| `OPENAI_API_KEY` | OpenAI API Key (optional fallback only) | — |
 
 ### Vector Database (Pinecone)
 | Variable | Description |
@@ -424,4 +448,4 @@ This project is licensed under the MIT License.
 
 ---
 
-**Built with ❤️ using FastAPI, LangGraph, Next.js, and OpenAI**
+**Built with ❤️ using FastAPI, LangGraph, Next.js, and Amazon Nova on AWS Bedrock**

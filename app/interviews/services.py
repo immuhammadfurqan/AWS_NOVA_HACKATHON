@@ -16,7 +16,7 @@ from app.candidates.schemas import Applicant, CandidateResponse
 from app.interviews.schemas import PrescreeningQuestion, InterviewSlot, InterviewStatus
 from app.interviews.models import InterviewRecord
 
-from app.ai.voice_agent import TwilioVoiceProvider, MockVoiceProvider
+from app.ai.voice_agent import TwilioVoiceProvider, MockVoiceProvider, NovaSonicVoiceProvider
 from app.interviews.scheduler import get_calendar_service, create_interview_event
 from openai import AsyncOpenAI
 import json
@@ -52,6 +52,8 @@ class VoiceService:
     def _create_provider(self) -> VoiceProviderProtocol:
         if self.settings.voice_provider == "twilio":
             return TwilioVoiceProvider()
+        elif self.settings.voice_provider == "nova_sonic":
+            return NovaSonicVoiceProvider()
         else:
             return MockVoiceProvider()
 

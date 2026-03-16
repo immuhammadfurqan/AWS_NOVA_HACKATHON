@@ -159,9 +159,9 @@ class TestHelperFunctions:
 
     def test_filter_candidates_by_threshold(self, sample_applicants: list[Applicant]):
         """Test filtering candidates by similarity threshold."""
-        # Default threshold is 0.7
+        # Default threshold is 0.6
         shortlisted_ids = filter_candidates_by_threshold(
-            sample_applicants, threshold=0.7
+            sample_applicants, threshold=0.6
         )
 
         assert len(shortlisted_ids) == 2  # Alice (0.85) and Carol (0.75)
@@ -321,7 +321,7 @@ class TestShortlistCandidatesNode:
 
             with patch("app.workflow.nodes.get_settings") as mock_settings:
                 mock_settings.return_value = MagicMock(
-                    shortlist_similarity_threshold=0.7
+                    shortlist_similarity_threshold=0.6
                 )
 
                 result = await shortlist_candidates_node(initial_state)

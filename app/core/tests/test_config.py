@@ -100,4 +100,5 @@ class TestAWSConfig:
 
         settings = get_settings()
 
-        assert settings.bedrock_embedding_dimension in [256, 512, 1024]
+        # Nova 2 Multimodal Embeddings supports 256, 384, 1024, 3072
+        assert settings.bedrock_embedding_dimension in [256, 384, 1024, 3072]

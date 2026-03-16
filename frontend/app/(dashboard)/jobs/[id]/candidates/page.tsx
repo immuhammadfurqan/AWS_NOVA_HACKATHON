@@ -37,6 +37,14 @@ const filterLabels: Record<FilterOption, string> = {
     low_match: "Low Match (<50%)",
 };
 
+function normalizeToPercentage(score: number | null | undefined): number {
+    if (typeof score !== "number" || Number.isNaN(score)) {
+        return 0;
+    }
+    const normalized = score <= 1 ? score * 100 : score;
+    return Math.max(0, Math.min(100, normalized));
+}
+
 export default function CandidatesPage() {
     const params = useParams();
     const [candidates, setCandidates] = useState<Applicant[]>([]);
@@ -55,7 +63,11 @@ export default function CandidatesPage() {
     async function loadCandidates(jobId: string) {
         try {
             const res = await api.get(`/jobs/${jobId}/applicants`);
-            setCandidates(res.data.applicants || []);
+            const normalizedCandidates = (res.data.applicants || []).map((candidate: Applicant) => ({
+                ...candidate,
+                similarity_score: normalizeToPercentage(candidate.similarity_score),
+            }));
+            setCandidates(normalizedCandidates);
         } catch (error) {
             console.error("Failed to load candidates", error);
         } finally {

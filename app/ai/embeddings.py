@@ -43,7 +43,7 @@ class PineconeService:
         """
         settings = get_settings()
         self.api_key = api_key or settings.pinecone_api_key
-        self.index_name = index_name or settings.pinecone_index
+        self.index_name = index_name or settings.pinecone_index_nova
 
         if not self.api_key:
             raise ValueError("PINECONE_API_KEY is not set")

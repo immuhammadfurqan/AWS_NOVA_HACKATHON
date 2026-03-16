@@ -23,6 +23,24 @@ from app.ai.prompts import (
 
 logger = get_logger(__name__)
 
+# GeneratedJD schema list limits (from domain.py) - LLM may exceed these
+_JD_LIST_LIMITS = {
+    "responsibilities": 20,
+    "requirements": 30,
+    "nice_to_have": 20,
+    "benefits": 30,
+    "seo_keywords": 20,
+}
+
+
+def _normalize_jd_data(jd_data: dict) -> dict:
+    """Truncate list fields to schema limits; LLM output may exceed max_length."""
+    out = dict(jd_data)
+    for key, limit in _JD_LIST_LIMITS.items():
+        if key in out and isinstance(out[key], list) and len(out[key]) > limit:
+            out[key] = out[key][:limit]
+    return out
+
 
 # ============================================================================
 # Provider-Agnostic Generation Functions
@@ -63,7 +81,7 @@ async def generate_job_description(job_input: JobInput) -> GeneratedJD:
         else:
             result = await _generate_with_openai(prompt)
 
-        jd_data = json.loads(result)
+        jd_data = _normalize_jd_data(json.loads(result))
         logger.info(f"JD generated successfully for: {job_input.role_title}")
         return GeneratedJD(**jd_data)
 
@@ -170,7 +188,7 @@ Salary: {previous_jd.salary_range or 'Not specified'}
         else:
             result = await _generate_with_openai(prompt)
 
-        jd_data = json.loads(result)
+        jd_data = _normalize_jd_data(json.loads(result))
         logger.info("JD regenerated successfully")
         return GeneratedJD(**jd_data)
 
@@ -216,7 +234,7 @@ Salary: {previous_jd.salary_range or 'Not specified'}
         else:
             result = await _generate_with_openai(prompt)
 
-        jd_data = json.loads(result)
+        jd_data = _normalize_jd_data(json.loads(result))
         logger.info("JD optimized successfully")
         return GeneratedJD(**jd_data)
 

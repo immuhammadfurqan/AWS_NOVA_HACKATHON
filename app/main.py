@@ -16,7 +16,7 @@ from uuid import uuid4
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 
 from app.core.config import get_settings
 from app.core.database import init_database, close_database
@@ -196,14 +196,25 @@ app.include_router(users_router)
 # ============================================================================
 
 
-@app.get("/", tags=["Health"])
+@app.get("/", response_class=HTMLResponse, tags=["Health"])
 async def root():
-    """Root health check endpoint."""
-    return {
-        "status": "healthy",
-        "service": "AARLP",
-        "version": "1.0.0",
-    }
+    """Root landing page with links to API docs."""
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"><title>AARLP API</title></head>
+    <body style="font-family: system-ui; max-width: 600px; margin: 3rem auto; padding: 2rem;">
+        <h1>AARLP API</h1>
+        <p>AI-Agentic Recruitment Lifecycle Platform — backend is running.</p>
+        <ul>
+            <li><a href="/docs">Swagger UI (interactive API docs)</a></li>
+            <li><a href="/redoc">ReDoc (API documentation)</a></li>
+            <li><a href="/health">Health check (JSON)</a></li>
+        </ul>
+        <p><small>Version 1.0.0</small></p>
+    </body>
+    </html>
+    """
 
 
 @app.get("/health", tags=["Health"])

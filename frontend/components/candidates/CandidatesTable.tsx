@@ -17,6 +17,19 @@ interface CandidatesTableProps {
     candidates: Applicant[];
 }
 
+function normalizeToPercentage(score: number | null | undefined): number {
+    if (typeof score !== "number" || Number.isNaN(score)) {
+        return 0;
+    }
+    const normalized = score <= 1 ? score * 100 : score;
+    return Math.max(0, Math.min(100, normalized));
+}
+
+function formatPercentage(score: number): string {
+    const rounded = Math.round(score * 10) / 10;
+    return `${rounded}%`;
+}
+
 export function CandidatesTable({ candidates }: CandidatesTableProps) {
     if (candidates.length === 0) {
         return (
@@ -39,8 +52,11 @@ export function CandidatesTable({ candidates }: CandidatesTableProps) {
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                    {candidates.map((candidate, i) => (
-                        <motion.tr
+                    {candidates.map((candidate, i) => {
+                        const scorePercent = normalizeToPercentage(candidate.similarity_score);
+
+                        return (
+                            <motion.tr
                             key={candidate.id}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -55,17 +71,17 @@ export function CandidatesTable({ candidates }: CandidatesTableProps) {
                                 <div className="flex items-center gap-2">
                                     <div className="h-2 w-24 rounded-full bg-secondary overflow-hidden">
                                         <div
-                                            className={`h-full rounded-full ${candidate.similarity_score >= 80
+                                            className={`h-full rounded-full ${scorePercent >= 80
                                                 ? "bg-green-500"
-                                                : candidate.similarity_score >= 50
+                                                : scorePercent >= 50
                                                     ? "bg-amber-500"
                                                     : "bg-red-500"
                                                 }`}
-                                            style={{ width: `${candidate.similarity_score}%` }}
+                                            style={{ width: `${scorePercent}%` }}
                                         />
                                     </div>
                                     <span className="text-xs font-medium text-foreground">
-                                        {candidate.similarity_score}%
+                                        {formatPercentage(scorePercent)}
                                     </span>
                                 </div>
                             </td>
@@ -89,7 +105,8 @@ export function CandidatesTable({ candidates }: CandidatesTableProps) {
                                 </Button>
                             </td>
                         </motion.tr>
-                    ))}
+                        );
+                    })}
                 </tbody>
             </table>
         </div>
